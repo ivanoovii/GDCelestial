@@ -61,8 +61,12 @@ void CelestialBody::set_longitude_of_perigee(double new_longitude_of_perigee)
 
 void CelestialBody::set_clockwise(bool new_clockwise)
 {
+    // Change revolvation direction by changing the sign of the specific angular momentum.
+    if (clockwise != new_clockwise)
+    { specific_angular_momentum = -specific_angular_momentum; }
+
     clockwise = new_clockwise;
-    keplerian_to_cartesian(); // TODO just need to update the sign of specific angular momentum, no need for full update.
+    keplerian_to_cartesian<false>(); // Just need to update the sign of the specific angular momentum, no need for a full update.
     on_keplerian_parameters_changed();
 }
 
@@ -96,7 +100,7 @@ void CelestialBody::keplerian_to_cartesian()
         specific_mechanical_energy = get_specific_mechanical_energy_from_keplerian();
     }
 
-    // Updating distance.
+    // Updating the distance.
     distance = get_semi_latus_rectum() / (1.0 + eccentricity * std::cos(true_anomaly));
 
     // Updating local cartesian coordinates.
