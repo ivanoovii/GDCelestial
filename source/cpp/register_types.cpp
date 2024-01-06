@@ -7,6 +7,9 @@
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/godot.hpp>
 
+#include <iostream>
+#include <fstream>
+
 #include "CelestialBody.hpp"
 #include "CelestialPhysics.hpp"
 
@@ -36,9 +39,11 @@ void gdcelestial_terminate(godot::ModuleInitializationLevel p_level)
 
 extern "C"
 {
-    GDExtensionBool GDE_EXPORT gdextension_init(const GDExtensionInterface *p_interface, const GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization)
+    GDExtensionBool GDE_EXPORT gdextension_init(GDExtensionInterfaceGetProcAddress p_get_proc_address, GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization)
+    //GDExtensionBool GDE_EXPORT gdextension_init(const GDExtensionInterface *p_interface, GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization)
     {
-        godot::GDExtensionBinding::InitObject init_obj(p_interface, p_library, r_initialization);
+        godot::GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
+        //godot::GDExtensionBinding::InitObject init_obj(p_interface, p_library, r_initialization);
 
         init_obj.register_initializer(gdcelestial_initialize);
         init_obj.register_terminator(gdcelestial_terminate);
