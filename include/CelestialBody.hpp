@@ -46,21 +46,34 @@ protected:
     bool clockwise = true;
 
     double true_anomaly = 0.0;
+    double mean_anomaly = 0.0;
     double distance = 0.0;
 
     // Integrals.
     double specific_angular_momentum = 0.0;
     double specific_mechanical_energy = 0.0;
+    double mean_motion = 0.0;
 
     // Local cartesian coordinates.
     godot::Vector2 local_position = godot::Vector2(0.0, 0.0);
     godot::Vector2 local_velocity = godot::Vector2(0.0, 0.0);
 
 
+    // On keplerian parameters changed callback.
     virtual void on_keplerian_parameters_changed() = 0;
 
+    // Integrals calculation from keplerian parameters.
     double get_specific_angular_momentum_from_keplerian() const { return (clockwise ? 1.0 : -1.0) * std::sqrt(mu * get_semi_latus_rectum()); }
     double get_specific_mechanical_energy_from_keplerian() const { return -mu / (2.0 * get_semi_major_axis()); }
+    double get_mean_motion_from_keplerian() const
+    {
+        //double abs_semi_major_axis = std::abs(get_semi_major_axis());
+        //return std::sqrt(mu / abs_semi_major_axis) / abs_semi_major_axis;
+
+        double multiplier = (eccentricity == 1.0) ? 1.0 : std::abs(1.0 - eccentricity * eccentricity);
+        multiplier = std::sqrt(multiplier * multiplier * multiplier);
+        return multiplier * mu * mu / (specific_angular_momentum * specific_angular_momentum * specific_angular_momentum);
+    }
 
     // Conversion between local (on orbital plane) and global cartesian coordinates.
     virtual void local_cartesian_to_cartesian() = 0;
@@ -105,6 +118,9 @@ public:
 
     double get_true_anomaly() const { return true_anomaly; }
     void set_true_anomaly(double new_true_anomaly);
+
+    double get_mean_anomaly() const { return mean_anomaly; }
+    void set_mean_anomaly(double new_mean_anomaly);
 
 
     // Get gravitational parameter used by children.

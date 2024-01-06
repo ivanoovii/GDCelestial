@@ -6,6 +6,7 @@
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
+
 class CelestialPhysics : public godot::Object
 {
     GDCLASS(CelestialPhysics, godot::Object);
@@ -32,8 +33,15 @@ public:
     ~CelestialPhysics();
 
     // Conics math.
-    double true_anomaly_to_eccentric_anomaly(double true_anomaly, double eccentricity) const;
-    double eccentric_anomaly_to_true_anomaly(double eccentric_anomaly, double eccentricity) const;
+    static double true_anomaly_to_eccentric_anomaly(double true_anomaly, double eccentricity);
+    static double eccentric_anomaly_to_true_anomaly(double eccentric_anomaly, double eccentricity);
+
+    //static double mean_anomaly_to_eccentric_anomaly(double mean_anomaly, double eccentricity);
+    //static double eccentric_anomaly_to_mean_anomaly(double eccentric_anomaly, double eccentricity);
+
+    static double mean_anomaly_to_true_anomaly(double mean_anomaly, double eccentricity,
+            double true_anomaly_hint = 0.0, double tolerance = 1e-9, unsigned int max_iters = 64);
+    static double true_anomaly_to_mean_anomaly(double true_anomaly, double eccentricity);
 };
 
 #endif
