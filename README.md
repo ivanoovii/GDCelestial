@@ -12,7 +12,7 @@ Celestial physics implementation for Godot 4.
 ## Known problems
 
 Current Kepler equation solver is a little dumb and do not converge in case of bad initial approximation.
-Probably should stop inventing the bicycles and use a separate well-crafted library for orbital mechanics...
+Probably should stop reinventing the wheel and use a separate well-crafted library for orbital mechanics...
 
 ## Acknowledgments
 
