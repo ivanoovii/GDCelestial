@@ -46,6 +46,11 @@ void CelestialBody::set_periapsis(double new_periapsis)
 void CelestialBody::set_eccentricity(double new_eccentricity)
 {
     eccentricity = std::max(new_eccentricity, 0.0);
+
+    // Reset anomalies, as they are invalidated when eccentricity changes.
+    true_anomaly = 0.0;
+    mean_anomaly = 0.0;
+
     keplerian_to_cartesian();
     on_keplerian_parameters_changed();
 }
@@ -83,7 +88,16 @@ godot::Dictionary CelestialBody::get_keplerian_parameters() const
 
 void CelestialBody::set_true_anomaly(double new_true_anomaly)
 {
-    true_anomaly = std::remainder(new_true_anomaly, 2.0 * PI);
+    if (eccentricity < 1.0) { new_true_anomaly = std::remainder(new_true_anomaly, 2.0 * PI); }
+    else
+    {
+        double max_true_anomaly_absolute_value = std::acos(-1.0 / eccentricity) -
+            static_cast<double>(std::numeric_limits<float>::epsilon());
+        // `float` machine epsilon for stability.
+        new_true_anomaly = clamp(new_true_anomaly, -max_true_anomaly_absolute_value, max_true_anomaly_absolute_value);
+    }
+    true_anomaly = new_true_anomaly;
+
     mean_anomaly = CelestialPhysics::true_anomaly_to_mean_anomaly(new_true_anomaly, eccentricity);
     keplerian_to_cartesian<false>(); // Do not update the integrals, they are the same.
 }
@@ -91,7 +105,9 @@ void CelestialBody::set_true_anomaly(double new_true_anomaly)
 
 void CelestialBody::set_mean_anomaly(double new_mean_anomaly)
 {
-    mean_anomaly = std::remainder(new_mean_anomaly, 2.0 * PI);
+    if (eccentricity < 1.0) { new_mean_anomaly = std::remainder(new_mean_anomaly, 2.0 * PI); }
+    mean_anomaly = new_mean_anomaly;
+
     true_anomaly = CelestialPhysics::mean_anomaly_to_true_anomaly(new_mean_anomaly, eccentricity, true_anomaly);
     keplerian_to_cartesian<false>(); // Do not update the integrals, they are the same.
 }
@@ -146,11 +162,13 @@ void CelestialBody::cartesian_to_keplerian()
 
     clockwise = (specific_angular_momentum >= 0.0);
 
-    // True and mean anomaly.
+    // Periapsis height.
     periapsis = specific_angular_momentum * specific_angular_momentum / (mu * (1.0 + eccentricity));
+
+    // True and mean anomaly.
     true_anomaly = reference_direction.angle_to(local_position) - longitude_of_perigee;
     true_anomaly = std::remainder(true_anomaly, 2.0 * PI);
-    // TODO mean anomaly!
+    mean_anomaly = CelestialPhysics::true_anomaly_to_mean_anomaly(true_anomaly, eccentricity);
 
     on_keplerian_parameters_changed();
 }
@@ -274,10 +292,6 @@ void CelestialBody2D::update_children_mu() const
     for (int64_t index = 0; index < children.size(); ++index)
     {
         CelestialBody2D *child_as_celestial_body_2d = godot::Node::cast_to<CelestialBody2D>(children[index]);
-
-        //godot::UtilityFunctions::print("Next child:");
-        //godot::UtilityFunctions::print(children[index]);
-        //godot::UtilityFunctions::print(child_as_celestial_body_2d);
 
         if (child_as_celestial_body_2d)
         {

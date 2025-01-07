@@ -87,7 +87,7 @@ double CelestialPhysics::mean_anomaly_to_true_anomaly(double mean_anomaly, doubl
 
             for (unsigned int iter = 0; iter < max_iter; ++iter) // Newton iteration for Kepler equation;
             {
-                eccentric_anomaly = std::min(std::max(eccentric_anomaly, region_min), region_max);
+                eccentric_anomaly = clamp(eccentric_anomaly, region_min, region_max);
 
                 double residual = eccentric_anomaly - eccentricity * std::sin(eccentric_anomaly) - mean_anomaly;
                 double derivative = 1.0 - eccentricity * std::cos(eccentric_anomaly);

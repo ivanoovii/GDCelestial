@@ -8,6 +8,10 @@
 
 constexpr double PI = 3.14159265358979323846;
 
+template<class T>
+constexpr const T& clamp(const T& v, const T& lo, const T& hi)
+{ return (v < lo) ? lo : (hi < v) ? hi : v; }
+
 
 class CelestialPhysics : public godot::Object
 {
