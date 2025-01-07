@@ -40,7 +40,7 @@ public:
     //static double eccentric_anomaly_to_mean_anomaly(double eccentric_anomaly, double eccentricity);
 
     static double mean_anomaly_to_true_anomaly(double mean_anomaly, double eccentricity,
-            double true_anomaly_hint = 0.0, double tolerance = 1e-9, unsigned int max_iters = 64);
+            double true_anomaly_hint = 0.0, double tolerance = 1e-12, unsigned int max_iters = 8);
     static double true_anomaly_to_mean_anomaly(double true_anomaly, double eccentricity);
 };
 

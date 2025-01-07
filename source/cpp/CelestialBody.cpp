@@ -1,3 +1,5 @@
+#include <numbers>
+
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -5,8 +7,6 @@
 #include <godot_cpp/classes/sprite2d.hpp>
 
 #include "CelestialBody.hpp"
-
-constexpr double PI = 3.14159265358979323846;
 
 
 //////// CelestialBody ////////
@@ -54,7 +54,7 @@ void CelestialBody::set_eccentricity(double new_eccentricity)
 
 void CelestialBody::set_longitude_of_perigee(double new_longitude_of_perigee)
 {
-    longitude_of_perigee = new_longitude_of_perigee;
+    longitude_of_perigee = std::remainder(new_longitude_of_perigee, 2.0 * std::numbers::pi);
     keplerian_to_cartesian<false>(); // Do not update the integrals, they are the same.
     on_keplerian_parameters_changed();
 }
@@ -85,7 +85,7 @@ godot::Dictionary CelestialBody::get_keplerian_parameters() const
 
 void CelestialBody::set_true_anomaly(double new_true_anomaly)
 {
-    true_anomaly = new_true_anomaly;
+    true_anomaly = std::remainder(new_true_anomaly, 2.0 * std::numbers::pi);
     mean_anomaly = CelestialPhysics::true_anomaly_to_mean_anomaly(new_true_anomaly, eccentricity);
     keplerian_to_cartesian<false>(); // Do not update the integrals, they are the same.
 }
@@ -93,7 +93,7 @@ void CelestialBody::set_true_anomaly(double new_true_anomaly)
 
 void CelestialBody::set_mean_anomaly(double new_mean_anomaly)
 {
-    mean_anomaly = new_mean_anomaly;
+    mean_anomaly = std::remainder(new_mean_anomaly, 2.0 * std::numbers::pi);
     true_anomaly = CelestialPhysics::mean_anomaly_to_true_anomaly(new_mean_anomaly, eccentricity, true_anomaly);
     keplerian_to_cartesian<false>(); // Do not update the integrals, they are the same.
 }
@@ -118,7 +118,7 @@ void CelestialBody::keplerian_to_cartesian()
     local_position = distance * direction;
     local_velocity = specific_angular_momentum * (
             std::sin(true_anomaly) * eccentricity * direction / get_semi_latus_rectum() +
-            direction.rotated(PI / 2.0) / distance
+            direction.rotated(std::numbers::pi / 2.0) / distance
     );
 
     // Updating global cartesian coordinates.
@@ -139,7 +139,7 @@ void CelestialBody::cartesian_to_keplerian()
     godot::Vector2 eccentricity_vector = ((velocity_quad - mu / distance) * local_position - local_position.dot(local_velocity) * local_velocity) / mu;
     eccentricity = eccentricity_vector.length();
     longitude_of_perigee = reference_direction.angle_to(eccentricity_vector);
-    if (longitude_of_perigee < 0.0) { longitude_of_perigee = 2.0 * PI + longitude_of_perigee; }
+    longitude_of_perigee = std::remainder(longitude_of_perigee, 2.0 * std::numbers::pi);
 
     // Integrals.
     specific_angular_momentum  = local_position.cross(local_velocity);
@@ -151,7 +151,7 @@ void CelestialBody::cartesian_to_keplerian()
     // True and mean anomaly.
     periapsis = specific_angular_momentum * specific_angular_momentum / (mu * (1.0 + eccentricity));
     true_anomaly = reference_direction.angle_to(local_position) - longitude_of_perigee;
-    if (true_anomaly < 0.0) { true_anomaly = 2.0 * PI + true_anomaly; }
+    true_anomaly = std::remainder(true_anomaly, 2.0 * std::numbers::pi);
     // TODO mean anomaly!
 
     on_keplerian_parameters_changed();
@@ -164,7 +164,6 @@ void CelestialBody::celestial_physics_process(double delta)
     if (enabled && !godot::Engine::get_singleton()->is_editor_hint())
     {
         double physics_dt = delta * CelestialPhysics::get_singleton()->time_scale;
-        //set_true_anomaly(true_anomaly + physics_dt * specific_angular_momentum / (distance * distance));
         set_mean_anomaly(mean_anomaly + physics_dt * mean_motion);
     }
 }
@@ -204,7 +203,7 @@ void CelestialBody2D::_bind_methods()
     godot::ClassDB::bind_method<godot::MethodDefinition, void (CelestialBody2D::*)(double)>(godot::D_METHOD("set_longitude_of_perigee", "new_longitude_of_perigee"),
             &CelestialBody2D::set_longitude_of_perigee);
     ADD_PROPERTY(godot::PropertyInfo(godot::Variant::FLOAT, "keplerian_longitude_of_perigee", godot::PROPERTY_HINT_RANGE,
-                "-360,360,0.1,or_less,or_greater,radians"), "set_longitude_of_perigee", "get_longitude_of_perigee");
+                "-180,180,0.1,or_less,or_greater,radians"), "set_longitude_of_perigee", "get_longitude_of_perigee");
 
     godot::ClassDB::bind_method<godot::MethodDefinition, double (CelestialBody2D::*)() const>(godot::D_METHOD("get_true_anomaly"), &CelestialBody2D::get_true_anomaly);
     godot::ClassDB::bind_method<godot::MethodDefinition, void (CelestialBody2D::*)(double)>(godot::D_METHOD("set_true_anomaly", "new_true_anomaly"), &CelestialBody2D::set_true_anomaly);

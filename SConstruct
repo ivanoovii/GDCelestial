@@ -15,6 +15,9 @@ env.Append(CPPPATH=[cpp_include_folder])
 sources = list(map(Glob, cpp_source_folder.rglob("*.cpp")))
 #sources = Glob(str(cpp_source_folder.resolve()) + "/*.cpp")
 
+# Use C++20
+env.Append(CXXFLAGS="-std=c++20")
+
 # Find gdextension path even if the directory or extension is renamed (e.g. project/addons/example/example.gdextension).
 (extension_path,) = glob("project/addons/*/*.gdextension")
 

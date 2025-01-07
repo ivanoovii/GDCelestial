@@ -1,3 +1,5 @@
+#include <cmath>
+#include <numbers>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
@@ -78,9 +80,16 @@ double CelestialPhysics::mean_anomaly_to_true_anomaly(double mean_anomaly, doubl
         default:
         case 0:
         {
+            mean_anomaly = std::remainder(mean_anomaly, 2.0 * std::numbers::pi);
             double eccentric_anomaly = 2.0 * std::atan(std::tan(0.5 * true_anomaly_hint) * std::sqrt((1.0 - eccentricity) / (1.0 + eccentricity)));
+
+            double region_min = mean_anomaly - eccentricity;
+            double region_max = mean_anomaly + eccentricity;
+
             for (unsigned int iter = 0; iter < max_iter; ++iter) // Newton iteration for Kepler equation;
             {
+                eccentric_anomaly = std::min(std::max(eccentric_anomaly, region_min), region_max);
+
                 double residual = eccentric_anomaly - eccentricity * std::sin(eccentric_anomaly) - mean_anomaly;
                 double derivative = 1.0 - eccentricity * std::cos(eccentric_anomaly);
 
