@@ -6,6 +6,8 @@
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
+constexpr double PI = 3.14159265358979323846;
+
 
 class CelestialPhysics : public godot::Object
 {

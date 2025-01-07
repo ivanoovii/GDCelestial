@@ -1,5 +1,4 @@
 #include <cmath>
-#include <numbers>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
@@ -80,7 +79,7 @@ double CelestialPhysics::mean_anomaly_to_true_anomaly(double mean_anomaly, doubl
         default:
         case 0:
         {
-            mean_anomaly = std::remainder(mean_anomaly, 2.0 * std::numbers::pi);
+            mean_anomaly = std::remainder(mean_anomaly, 2.0 * PI);
             double eccentric_anomaly = 2.0 * std::atan(std::tan(0.5 * true_anomaly_hint) * std::sqrt((1.0 - eccentricity) / (1.0 + eccentricity)));
 
             double region_min = mean_anomaly - eccentricity;

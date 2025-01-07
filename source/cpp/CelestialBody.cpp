@@ -1,5 +1,3 @@
-#include <numbers>
-
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -54,7 +52,7 @@ void CelestialBody::set_eccentricity(double new_eccentricity)
 
 void CelestialBody::set_longitude_of_perigee(double new_longitude_of_perigee)
 {
-    longitude_of_perigee = std::remainder(new_longitude_of_perigee, 2.0 * std::numbers::pi);
+    longitude_of_perigee = std::remainder(new_longitude_of_perigee, 2.0 * PI);
     keplerian_to_cartesian<false>(); // Do not update the integrals, they are the same.
     on_keplerian_parameters_changed();
 }
@@ -85,7 +83,7 @@ godot::Dictionary CelestialBody::get_keplerian_parameters() const
 
 void CelestialBody::set_true_anomaly(double new_true_anomaly)
 {
-    true_anomaly = std::remainder(new_true_anomaly, 2.0 * std::numbers::pi);
+    true_anomaly = std::remainder(new_true_anomaly, 2.0 * PI);
     mean_anomaly = CelestialPhysics::true_anomaly_to_mean_anomaly(new_true_anomaly, eccentricity);
     keplerian_to_cartesian<false>(); // Do not update the integrals, they are the same.
 }
@@ -93,7 +91,7 @@ void CelestialBody::set_true_anomaly(double new_true_anomaly)
 
 void CelestialBody::set_mean_anomaly(double new_mean_anomaly)
 {
-    mean_anomaly = std::remainder(new_mean_anomaly, 2.0 * std::numbers::pi);
+    mean_anomaly = std::remainder(new_mean_anomaly, 2.0 * PI);
     true_anomaly = CelestialPhysics::mean_anomaly_to_true_anomaly(new_mean_anomaly, eccentricity, true_anomaly);
     keplerian_to_cartesian<false>(); // Do not update the integrals, they are the same.
 }
@@ -118,7 +116,7 @@ void CelestialBody::keplerian_to_cartesian()
     local_position = distance * direction;
     local_velocity = specific_angular_momentum * (
             std::sin(true_anomaly) * eccentricity * direction / get_semi_latus_rectum() +
-            direction.rotated(std::numbers::pi / 2.0) / distance
+            direction.rotated(PI / 2.0) / distance
     );
 
     // Updating global cartesian coordinates.
@@ -139,7 +137,7 @@ void CelestialBody::cartesian_to_keplerian()
     godot::Vector2 eccentricity_vector = ((velocity_quad - mu / distance) * local_position - local_position.dot(local_velocity) * local_velocity) / mu;
     eccentricity = eccentricity_vector.length();
     longitude_of_perigee = reference_direction.angle_to(eccentricity_vector);
-    longitude_of_perigee = std::remainder(longitude_of_perigee, 2.0 * std::numbers::pi);
+    longitude_of_perigee = std::remainder(longitude_of_perigee, 2.0 * PI);
 
     // Integrals.
     specific_angular_momentum  = local_position.cross(local_velocity);
@@ -151,7 +149,7 @@ void CelestialBody::cartesian_to_keplerian()
     // True and mean anomaly.
     periapsis = specific_angular_momentum * specific_angular_momentum / (mu * (1.0 + eccentricity));
     true_anomaly = reference_direction.angle_to(local_position) - longitude_of_perigee;
-    true_anomaly = std::remainder(true_anomaly, 2.0 * std::numbers::pi);
+    true_anomaly = std::remainder(true_anomaly, 2.0 * PI);
     // TODO mean anomaly!
 
     on_keplerian_parameters_changed();
