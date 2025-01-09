@@ -51,21 +51,6 @@ double CelestialPhysics::eccentric_anomaly_to_true_anomaly(double eccentric_anom
 }
 
 
-/*
- * Not really needed now. Will be deleted soon.
-double CelestialPhysics::mean_anomaly_to_eccentric_anomaly(double mean_anomaly, double eccentricity)
-{
-    // TODO solve Kepler equation;
-    return mean_anomaly;
-}
-
-double CelestialPhysics::eccentric_anomaly_to_mean_anomaly(double eccentric_anomaly, double eccentricity)
-{
-    return eccentric_anomaly - eccentricity * std::sin(eccentric_anomaly); // Kepler equation;
-}
-*/
-
-
 double CelestialPhysics::mean_anomaly_to_true_anomaly(double mean_anomaly, double eccentricity,
         double true_anomaly_hint, double tolerance, unsigned int max_iter)
 {

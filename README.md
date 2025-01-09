@@ -9,10 +9,14 @@ Celestial physics implementation for Godot 4.
 - [ ] 2D N-body.
 - [ ] 3D N-body.
 
+Most of the math is done in generic base-classes, so 3D should be easy to implement.
+I hope...
+
+Stay tuned!
+
 ## Known problems
 
-Current Kepler equation solver is a little dumb and do not converge in case of bad initial approximation.
-Probably should stop reinventing the wheel and use a separate well-crafted library for orbital mechanics...
+The current implementation of a Kepler equation solver is far from optimal.
 
 ## Acknowledgments
 

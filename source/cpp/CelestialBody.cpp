@@ -26,6 +26,7 @@ void CelestialBody::set_enabled(bool new_enabled)
 void CelestialBody::set_mass(double new_mass)
 {
     mass = std::max(new_mass, 0.0);
+    update_children_mu();
 }
 
 
@@ -250,11 +251,27 @@ void CelestialBody2D::_bind_methods()
 
     godot::ClassDB::bind_method<godot::MethodDefinition, double (CelestialBody2D::*)() const>(godot::D_METHOD("get_semi_latus_rectum"), &CelestialBody2D::get_semi_latus_rectum);
     godot::ClassDB::bind_method<godot::MethodDefinition, double (CelestialBody2D::*)() const>(godot::D_METHOD("get_semi_major_axis"), &CelestialBody2D::get_semi_major_axis);
+    godot::ClassDB::bind_method<godot::MethodDefinition, double (CelestialBody2D::*)() const>(godot::D_METHOD("get_apoapsis"), &CelestialBody2D::get_apoapsis);
+
+    godot::ClassDB::bind_method<godot::MethodDefinition, double (CelestialBody2D::*)(double) const>(godot::D_METHOD("get_true_anomaly_at_distance"), &CelestialBody2D::get_true_anomaly_at_distance);
 
     godot::ClassDB::bind_method<godot::MethodDefinition, double (CelestialBody2D::*)() const>(godot::D_METHOD("get_children_mu"), &CelestialBody2D::get_children_mu);
 
-    godot::ClassDB::bind_method<godot::MethodDefinition, double (CelestialBody2D::*)() const>(godot::D_METHOD("get_sphere_of_influence"), &CelestialBody2D::get_sphere_of_influence);
-    godot::ClassDB::bind_method<godot::MethodDefinition, double (CelestialBody2D::*)() const>(godot::D_METHOD("get_Hill_sphere"), &CelestialBody2D::get_Hill_sphere);
+    godot::ClassDB::bind_method<godot::MethodDefinition, double (CelestialBody2D::*)() const>(godot::D_METHOD("get_influence_radius"), &CelestialBody2D::get_influence_radius);
+    godot::ClassDB::bind_method<godot::MethodDefinition, double (CelestialBody2D::*)() const>(godot::D_METHOD("get_Hill_radius"), &CelestialBody2D::get_Hill_radius);
+
+    godot::ClassDB::bind_method<godot::MethodDefinition, void (CelestialBody2D::*)()>(godot::D_METHOD("reparent_up"), &CelestialBody2D::reparent_up);
+    godot::ClassDB::bind_method<godot::MethodDefinition, void (CelestialBody2D::*)(CelestialBody2D*)>(godot::D_METHOD("reparent_down"), &CelestialBody2D::reparent_down);
+    godot::ClassDB::bind_method<godot::MethodDefinition, void (CelestialBody2D::*)()>(godot::D_METHOD("patch_conics"), &CelestialBody2D::patch_conics);
+
+    // It seems that one can not override _physics_process in both GDExtension and GDScript.
+    // https://github.com/godotengine/godot-cpp/issues/1022
+    //GDVIRTUAL_BIND(_physics_process, "delta");
+    //godot::ClassDB::bind_method<godot::MethodDefinition, void (CelestialBody2D::*)(double)>(godot::D_METHOD("_physics_process"), &CelestialBody2D::_physics_process);
+    //BIND_VIRTUAL_METHOD(CelestialBody2D, _physics_process);
+
+    // Due to the issue above, expose the following method:
+    godot::ClassDB::bind_method<godot::MethodDefinition, void (CelestialBody2D::*)(double)>(godot::D_METHOD("celestial_physics_process"), &CelestialBody2D::celestial_physics_process);
 }
 
 
@@ -288,7 +305,7 @@ void CelestialBody2D::update_children_mu() const
 {
     double children_mu = get_children_mu();
 
-    godot::TypedArray<Node> children = get_children();
+    godot::TypedArray<godot::Node> children = get_children();
     for (int64_t index = 0; index < children.size(); ++index)
     {
         CelestialBody2D *child_as_celestial_body_2d = godot::Node::cast_to<CelestialBody2D>(children[index]);
@@ -313,6 +330,92 @@ void CelestialBody2D::set_linear_velocity(godot::Vector2 new_linear_velocity)
 void CelestialBody2D::set_angular_velocity(double new_angular_velocity)
 {
     angular_velocity = new_angular_velocity;
+}
+
+
+void CelestialBody2D::reparent_up()
+{
+    bool was_enabled = get_enabled();
+    set_enabled(false);
+
+    CelestialBody2D *parent = godot::Node::cast_to<CelestialBody2D>(get_parent());
+
+    if (parent)
+    {
+        CelestialBody2D *new_parent = godot::Node::cast_to<CelestialBody2D>(parent->get_parent());
+
+        if (new_parent)
+        {
+            reparent(new_parent);
+
+            // As Cartesian to Keplerian conversion will be apllied, no need to use setter for mu.
+            mu = new_parent->get_children_mu();
+            set_linear_velocity(get_linear_velocity() + parent->get_linear_velocity());
+        }
+        else
+        { godot::UtilityFunctions::printerr("Can not reparent CelestialBody2D up: new parent is not a valid node."); }
+    }
+    else
+    { godot::UtilityFunctions::printerr("Can not reparent CelestialBody2D up: current parent is not a CelestialBody2D node."); }
+
+    set_enabled(was_enabled);
+}
+
+void CelestialBody2D::reparent_down(CelestialBody2D* new_parent)
+{
+    bool was_enabled = get_enabled();
+    set_enabled(false);
+
+    if (new_parent)
+    {
+        CelestialBody2D *parent = godot::Node::cast_to<CelestialBody2D>(get_parent());
+        CelestialBody2D *parent_of_new_parent = godot::Node::cast_to<CelestialBody2D>(new_parent->get_parent());
+
+        if (parent && (parent == parent_of_new_parent))
+        {
+            reparent(new_parent);
+
+            // As Cartesian to Keplerian conversion will be apllied, no need to use setter for mu.
+            mu = new_parent->get_children_mu();
+            set_linear_velocity(get_linear_velocity() - new_parent->get_linear_velocity());
+        }
+        else
+        { godot::UtilityFunctions::printerr("Can not reparent CelestialBody2D down: new parent is not a sibling."); }
+    }
+    else
+    { godot::UtilityFunctions::printerr("Can not reparent CelestialBody2D down: new parent is not a CelestialBody2D node."); }
+
+    set_enabled(was_enabled);
+}
+
+void CelestialBody2D::patch_conics()
+{
+    CelestialBody2D *parent = godot::Node::cast_to<CelestialBody2D>(get_parent());
+    if (parent)
+    {
+        // Check if in parent's SOI.
+        if (parent->get_influence_radius_squared() < distance * distance)
+        { reparent_up(); }
+        // Check siblings.
+        else
+        {
+            godot::TypedArray<godot::Node> children = parent->get_children();
+            for (int64_t index = 0; index < children.size(); ++index)
+            {
+                CelestialBody2D *child_as_celestial_body_2d = godot::Node::cast_to<CelestialBody2D>(children[index]);
+
+                if (child_as_celestial_body_2d && (child_as_celestial_body_2d != this) &&
+                        (
+                            (local_position - child_as_celestial_body_2d->local_position).length_squared() <
+                            child_as_celestial_body_2d->get_influence_radius_squared()
+                        )
+                    )
+                {
+                    reparent_down(child_as_celestial_body_2d);
+                }
+            }
+        }
+    }
 }
 
 
