@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <cmath>
+#include <numbers>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
@@ -54,9 +56,6 @@ double CelestialPhysics::eccentric_anomaly_to_true_anomaly(double eccentric_anom
 double CelestialPhysics::mean_anomaly_to_true_anomaly(double mean_anomaly, double eccentricity,
         double true_anomaly_hint, double tolerance, unsigned int max_iter)
 {
-    //double eccentric_anomaly = mean_anomaly_to_eccentric_anomaly(mean_anomaly, eccentricity);
-    //return eccentric_anomaly_to_true_anomaly(eccentric_anomaly, eccentricity);
-
     // Using Newton method to convert mean anomaly to true anomaly.
     int orbit_type = (eccentricity >= 1.0) + (eccentricity > 1.0); // 0 - elliptical, 1 - parabolical, 2 - hyperbolical.
     switch (orbit_type)
@@ -64,7 +63,7 @@ double CelestialPhysics::mean_anomaly_to_true_anomaly(double mean_anomaly, doubl
         default:
         case 0:
         {
-            mean_anomaly = std::remainder(mean_anomaly, 2.0 * PI);
+            mean_anomaly = std::remainder(mean_anomaly, 2.0 * std::numbers::pi);
             double eccentric_anomaly = 2.0 * std::atan(std::tan(0.5 * true_anomaly_hint) * std::sqrt((1.0 - eccentricity) / (1.0 + eccentricity)));
 
             double region_min = mean_anomaly - eccentricity;
@@ -72,7 +71,7 @@ double CelestialPhysics::mean_anomaly_to_true_anomaly(double mean_anomaly, doubl
 
             for (unsigned int iter = 0; iter < max_iter; ++iter) // Newton iteration for Kepler equation;
             {
-                eccentric_anomaly = clamp(eccentric_anomaly, region_min, region_max);
+                eccentric_anomaly = std::clamp(eccentric_anomaly, region_min, region_max);
 
                 double residual = eccentric_anomaly - eccentricity * std::sin(eccentric_anomaly) - mean_anomaly;
                 double derivative = 1.0 - eccentricity * std::cos(eccentric_anomaly);
@@ -82,7 +81,7 @@ double CelestialPhysics::mean_anomaly_to_true_anomaly(double mean_anomaly, doubl
                 if (std::abs(delta) < tolerance) { break; }
 
                 if (iter + 1 == max_iter)
-                { godot::UtilityFunctions::print("Mean anomaly to true anomaly conversion failed: the solver did not converge."); }
+                { godot::UtilityFunctions::printerr("Mean anomaly to true anomaly conversion failed: the solver did not converge (elliptic orbit)."); }
             }
 
             return 2.0 * std::atan(std::tan(0.5 * eccentric_anomaly) * std::sqrt((1.0 + eccentricity) / (1.0 - eccentricity)));
@@ -105,7 +104,7 @@ double CelestialPhysics::mean_anomaly_to_true_anomaly(double mean_anomaly, doubl
                 if (std::abs(delta) < tolerance) { break; }
 
                 if (iter + 1 == max_iter)
-                { godot::UtilityFunctions::print("Mean anomaly to true anomaly conversion failed: the solver did not converge."); }
+                { godot::UtilityFunctions::printerr("Mean anomaly to true anomaly conversion failed: the solver did not converge (hyperbolic orbit)."); }
             }
 
             return 2.0 * std::atan(std::tanh(0.5 * eccentric_anomaly) * std::sqrt((eccentricity + 1.0) / (eccentricity - 1.0)));
@@ -115,9 +114,6 @@ double CelestialPhysics::mean_anomaly_to_true_anomaly(double mean_anomaly, doubl
 
 double CelestialPhysics::true_anomaly_to_mean_anomaly(double true_anomaly, double eccentricity)
 {
-    //double eccentric_anomaly = true_anomaly_to_eccentric_anomaly(true_anomaly, eccentricity);
-    //return eccentric_anomaly_to_mean_anomaly(eccentric_anomaly, eccentricity);
-
     int orbit_type = (eccentricity >= 1.0) + (eccentricity > 1.0); // 0 - elliptic, 1 - parabolic, 2 - hyperbolic.
     switch (orbit_type)
     {

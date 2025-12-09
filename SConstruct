@@ -16,7 +16,7 @@ sources = list(map(Glob, cpp_source_folder.rglob("*.cpp")))
 #sources = Glob(str(cpp_source_folder.resolve()) + "/*.cpp")
 
 # Use C++20
-#env.Append(CXXFLAGS="-std=c++20")
+env.Append(CXXFLAGS="-std=c++20")
 # Will not build on Android without NDK 26+, which is not yet supported by Godot.
 
 # Find gdextension path even if the directory or extension is renamed (e.g. project/addons/example/example.gdextension).

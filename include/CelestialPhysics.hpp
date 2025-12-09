@@ -6,6 +6,7 @@
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
+/*
 // TODO: use std::numbers::pi when c++20.
 constexpr double PI = 3.14159265358979323846;
 
@@ -13,6 +14,7 @@ constexpr double PI = 3.14159265358979323846;
 template<class T>
 constexpr const T& clamp(const T& v, const T& lo, const T& hi)
 { return (v < lo) ? lo : (hi < v) ? hi : v; }
+*/
 
 
 class CelestialPhysics : public godot::Object
@@ -45,7 +47,7 @@ public:
     static double eccentric_anomaly_to_true_anomaly(double eccentric_anomaly, double eccentricity);
 
     static double mean_anomaly_to_true_anomaly(double mean_anomaly, double eccentricity,
-            double true_anomaly_hint = 0.0, double tolerance = 1e-12, unsigned int max_iters = 8);
+            double true_anomaly_hint = 0.0, double tolerance = 1e-12, unsigned int max_iters = 16);
     static double true_anomaly_to_mean_anomaly(double true_anomaly, double eccentricity);
 };
 

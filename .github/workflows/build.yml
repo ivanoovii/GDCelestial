@@ -65,11 +65,11 @@ jobs:
       - name: (Android) Install Android SDK
         if: ${{ startsWith(matrix.identifier, 'android-') }}
         uses: android-actions/setup-android@v3
-      - name: (Android) Install NDK r23c
+      - name: (Android) Install NDK r28b
         if: ${{ matrix.platform == 'android' }}
         uses: nttld/setup-ndk@v1
         with:
-          ndk-version: r23c
+          ndk-version: r28b
           link-to-sdk: true
       - name: Install Python
         uses: actions/setup-python@v2
